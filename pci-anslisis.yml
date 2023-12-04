@@ -1,0 +1,86 @@
+---
+- name: Playbook para análisis de OpenSCAP
+  hosts: all
+  gather_facts: no
+  become: yes
+  vars:
+    base_dir: /opt/ansible/pci/pci-analisis/files/RemoteReports
+    max_dirs: 20
+
+  tasks:
+    - name: Verificar disponibilidad del servidor
+      wait_for_connection:
+        timeout: 4
+      register: availability_check
+      ignore_errors: yes
+
+    - name: Registrar servidores no disponibles
+      debug:
+        msg: "El servidor {{ inventory_hostname }} no está disponible."
+      when: availability_check is failed
+
+    - name: Crear directorio de reportes secuencialmente en el servidor de Ansible
+      block:
+        - name: Determinar el nombre del próximo directorio de reportes
+          command: >
+            bash -c 'for i in $(seq -w 1 {{ max_dirs }}); do if [ ! -d "{{ base_dir }}/${i}-reports" ]; then echo "${i}-reports"; exit 0; fi; done'
+          delegate_to: localhost
+          register: next_dir_name
+          run_once: true
+
+        - name: Crear directorio de reportes
+          file:
+            path: "{{ base_dir }}/{{ next_dir_name.stdout }}"
+            state: directory
+            mode: 0755
+          delegate_to: localhost
+          run_once: true
+      when: availability_check is succeeded
+
+    - name: Realizar escaneo OpenSCAP PCI DSS en cada nodo remoto disponible
+      command: >
+        oscap-ssh root@{{ inventory_hostname }} 22 xccdf eval --profile xccdf_org.ssgproject.content_profile_pci-dss --report "{{ base_dir }}/{{ next_dir_name.stdout }}/{{ inventory_hostname }}-report.html" /usr/share/xml/scap/ssg/content/ssg-rhel8-ds.xml
+      delegate_to: localhost
+      when: availability_check is succeeded
+    - name: Crear archivo ZIP con todos los reportes
+      community.general.archive:
+        path: "{{ base_dir }}/{{ next_dir_name.stdout }}/*.html"
+        dest: "{{ base_dir }}/{{ next_dir_name.stdout }}/reportes-{{ next_dir_name.stdout }}.zip"
+        format: zip
+      delegate_to: localhost
+      run_once: true
+      when: availability_check is succeeded
+
+    - name: Copiar contenido a la ruta del repositorio Git
+      ansible.builtin.copy:
+        src: "{{ base_dir }}/{{ next_dir_name.stdout }}/"
+        dest: /opt/ansible/pci/pci-analisis/files/git/PCI-ReportsDemo/"{{ next_dir_name.stdout }}"
+        remote_src: yes
+        directory_mode: yes
+      delegate_to: localhost
+      when: availability_check is succeeded
+
+    - name: Añadir cambios al repositorio local de Git
+      ansible.builtin.shell: |
+        git add .
+      args:
+        chdir: /opt/ansible/pci/pci-analisis/files/git/PCI-ReportsDemo/"{{ next_dir_name.stdout }}"
+      delegate_to: localhost
+      when: availability_check is succeeded
+
+    - name: Hacer commit de los cambios
+      ansible.builtin.shell: |
+        git commit -m "Añadiendo reportes OpenSCAP"
+      args:
+        chdir: /opt/ansible/pci/pci-analisis/files/git/PCI-ReportsDemo/"{{ next_dir_name.stdout }}"
+      delegate_to: localhost
+      when: availability_check is succeeded
+
+    - name: Hacer push de los cambios al repositorio remoto en el branch 'chipotex'
+      ansible.builtin.shell: |
+        git push origin chipotez
+      args:
+        chdir: /opt/ansible/pci/pci-analisis/files/git/PCI-ReportsDemo/"{{ next_dir_name.stdout }}"
+      delegate_to: localhost
+      when: availability_check is succeeded
+
