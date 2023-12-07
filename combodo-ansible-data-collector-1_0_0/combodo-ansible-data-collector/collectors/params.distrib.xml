@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?><!-- Default values for parameters. Do NOT alter this file, use params.local.xml instead -->
+<parameters>
+  <!-- Ansible Parameters -->
+  <gather_facts>no</gather_facts>
+  <raw_directory>data/facts/raw</raw_directory>
+  <csv_directory>data/facts/csv</csv_directory>
+
+  <!-- Brand -->
+  <ansiblebrandcollector>
+    <csv_file>data/facts/csv/AnsibleBrandCollector.csv</csv_file>
+    <has_header>yes</has_header>
+    <collect_condition>
+      <virtualization_role>host</virtualization_role>
+    </collect_condition>
+    <primary_key type="array">
+      <ansible_attribute>chassis_vendor</ansible_attribute>
+    </primary_key>
+    <fields>
+      <name>chassis_vendor</name>
+    </fields>
+  </ansiblebrandcollector>
+
+  <!-- LogicalInterface -->
+  <ansiblelogicalinterfacecollector>
+    <csv_file>data/facts/csv/AnsibleLogicalInterfaceCollector.csv</csv_file>
+    <has_header>yes</has_header>
+    <array_to_consider_in_facts>
+      <from_array>true</from_array>
+      <array_name>interfaces</array_name>
+      <out_of_array_keys>
+        <virtualmachine_id>hostname</virtualmachine_id>
+      </out_of_array_keys>
+      <out_of_array_fields>
+        <virtualmachine_id>hostname</virtualmachine_id>
+      </out_of_array_fields>
+    </array_to_consider_in_facts>
+    <collect_condition>
+      <virtualization_role>guest</virtualization_role>
+    </collect_condition>
+    <primary_key type="array">
+      <ansible_attribute>device</ansible_attribute>
+      <ansible_attribute>hostname</ansible_attribute>
+    </primary_key>
+    <fields>
+      <macaddress>macaddress</macaddress>
+      <name>device</name>
+      <speed>speed</speed>
+      <virtualmachine_id>hostname</virtualmachine_id>
+    </fields>
+  </ansiblelogicalinterfacecollector>
+
+  <!-- Model -->
+  <ansiblemodelcollector>
+    <csv_file>data/facts/csv/AnsibleModelCollector.csv</csv_file>
+    <has_header>yes</has_header>
+    <collect_condition>
+      <virtualization_role>host</virtualization_role>
+    </collect_condition>
+    <primary_key type="array">
+      <ansible_attribute>chassis_vendor</ansible_attribute>
+      <ansible_attribute>product_name</ansible_attribute>
+    </primary_key>
+    <fields>
+      <name>product_name</name>
+      <brand_id>chassis_vendor</brand_id>
+    </fields>
+    <defaults>
+      <type>Server</type>
+    </defaults>
+  </ansiblemodelcollector>
+
+  <!-- OS Family -->
+  <ansibleosfamilycollector>
+    <csv_file>data/facts/csv/AnsibleOSFamilyCollector.csv</csv_file>
+    <has_header>yes</has_header>
+    <primary_key type="array">
+      <ansible_attribute>distribution</ansible_attribute>
+    </primary_key>
+    <fields>
+      <name>distribution</name>
+    </fields>
+  </ansibleosfamilycollector>
+
+  <!-- OS Version -->
+  <ansibleosversioncollector>
+    <csv_file>data/facts/csv/AnsibleOSVersionCollector.csv</csv_file>
+    <has_header>yes</has_header>
+    <primary_key type="array">
+      <ansible_attribute>distribution</ansible_attribute>
+      <ansible_attribute>distribution_version</ansible_attribute>
+    </primary_key>
+    <fields>
+      <name>distribution_version</name>
+      <osfamily_id>distribution</osfamily_id>
+    </fields>
+  </ansibleosversioncollector>
+
+  <!-- PhysicalInterface -->
+  <ansiblephysicalinterfacecollector>
+    <csv_file>data/facts/csv/AnsiblePhysicalInterfaceCollector.csv</csv_file>
+    <has_header>yes</has_header>
+    <array_to_consider_in_facts>
+      <from_array>true</from_array>
+      <array_name>interfaces</array_name>
+      <out_of_array_keys>
+        <connectableci_id>hostname</connectableci_id>
+      </out_of_array_keys>
+      <out_of_array_fields>
+        <connectableci_id>hostname</connectableci_id>
+      </out_of_array_fields>
+    </array_to_consider_in_facts>
+    <collect_condition>
+      <virtualization_role>host</virtualization_role>
+    </collect_condition>
+    <primary_key type="array">
+      <ansible_attribute>device</ansible_attribute>
+      <ansible_attribute>hostname</ansible_attribute>
+    </primary_key>
+    <fields>
+      <macaddress>macaddress</macaddress>
+      <name>device</name>
+      <speed>speed</speed>
+      <connectableci_id>hostname</connectableci_id>
+    </fields>
+  </ansiblephysicalinterfacecollector>
+
+  <!-- Server -->
+  <ansibleservercollector>
+    <csv_file>data/facts/csv/AnsibleServerCollector.csv</csv_file>
+    <has_header>yes</has_header>
+    <collect_condition>
+      <virtualization_role>host</virtualization_role>
+    </collect_condition>
+    <primary_key type="array">
+      <ansible_attribute>hostname</ansible_attribute>
+    </primary_key>
+    <fields>
+      <brand_id>chassis_vendor</brand_id>
+      <cpu>processor_vcpus</cpu>
+      <description>lsb.description</description>
+      <managementip>default_ipv4.address</managementip>
+      <model_id>product_name</model_id>
+      <name>hostname</name>
+      <osfamily_id>distribution</osfamily_id>
+      <osversion_id>distribution_version</osversion_id>
+      <ram>memtotal_mb</ram>
+      <serialnumber>product_serial</serialnumber>
+    </fields>
+    <defaults>
+      <org_id>Demo</org_id>
+      <status>production</status>
+    </defaults>
+  </ansibleservercollector>
+
+  <!-- VirtualMachine -->
+  <ansiblevirtualmachinecollector>
+    <csv_file>data/facts/csv/AnsibleVirtualMachineCollector.csv</csv_file>
+    <has_header>yes</has_header>
+    <collect_condition>
+      <virtualization_role>guest</virtualization_role>
+    </collect_condition>
+    <primary_key type="array">
+      <ansible_attribute>hostname</ansible_attribute>
+    </primary_key>
+    <fields>
+      <cpu>processor_vcpus</cpu>
+      <description>lsb.description</description>
+      <managementip>default_ipv4.address</managementip>
+      <name>hostname</name>
+      <osfamily_id>distribution</osfamily_id>
+      <osversion_id>distribution_version</osversion_id>
+      <ram>memtotal_mb</ram>
+    </fields>
+    <defaults>
+      <org_id>Demo</org_id>
+      <status>production</status>
+    </defaults>
+  </ansiblevirtualmachinecollector>
+
+  <!-- Class collection sequence -->
+  <collectors_launch_sequence type="array">
+    <!-- Brand -->
+    <collector>
+      <name>AnsibleBrandCollector</name>
+      <enable>yes</enable>
+      <rank>1</rank>
+    </collector>
+    <!-- Model -->
+    <collector>
+      <name>AnsibleModelCollector</name>
+      <enable>yes</enable>
+      <rank>2</rank>
+    </collector>
+    <!-- OS Family -->
+    <collector>
+      <name>AnsibleOSFamilyCollector</name>
+      <enable>yes</enable>
+      <rank>3</rank>
+    </collector>
+    <!-- OS Version -->
+    <collector>
+      <name>AnsibleOSVersionCollector</name>
+      <enable>yes</enable>
+      <rank>4</rank>
+    </collector>
+    <!-- Server -->
+    <collector>
+      <name>AnsibleServerCollector</name>
+      <enable>yes</enable>
+      <rank>5</rank>
+    </collector>
+    <!-- VirtualMachine -->
+    <collector>
+      <name>AnsiblePhysicalInterfaceCollector</name>
+      <enable>yes</enable>
+      <rank>6</rank>
+    </collector>
+   <collector>
+      <name>AnsibleVirtualMachineCollector</name>
+      <enable>yes</enable>
+      <rank>7</rank>
+    </collector>
+    <!-- LogicalInterface -->
+    <collector>
+      <name>AnsibleLogicalInterfaceCollector</name>
+      <enable>yes</enable>
+      <rank>8</rank>
+    </collector>
+  </collectors_launch_sequence>
+
+  <!-- Synchronization parameters -->
+  <contact_to_notify></contact_to_notify>
+  <synchro_user></synchro_user>
+  <name_prefix>Ansible</name_prefix>
+  <name_postfix>Discovery</name_postfix>
+  <json_placeholders type="hash">
+    <ansiblebrand_synchro_name>$name_prefix$ Brand $name_postfix$</ansiblebrand_synchro_name>
+    <ansiblelogicalinterface_synchro_name>$name_prefix$ Logical Interface $name_postfix$</ansiblelogicalinterface_synchro_name>
+    <ansiblemodel_synchro_name>$name_prefix$ Model $name_postfix$</ansiblemodel_synchro_name>
+    <ansibleosfamilies_synchro_name>$name_prefix$ OS Families $name_postfix$</ansibleosfamilies_synchro_name>
+    <ansibleosversion_synchro_name>$name_prefix$ OS Versions $name_postfix$</ansibleosversion_synchro_name>
+    <ansiblephysicalinterface_synchro_name>$name_prefix$ Physical Interface $name_postfix$</ansiblephysicalinterface_synchro_name>
+    <ansibleserver_synchro_name>$name_prefix$ Server $name_postfix$</ansibleserver_synchro_name>
+    <ansiblevirtualmachine_synchro_name>$name_prefix$ Virtual Machine $name_postfix$</ansiblevirtualmachine_synchro_name>
+    <synchro_status>production</synchro_status>
+    <full_load_interval>604800</full_load_interval><!-- 7 days (in seconds): 7*24*60*60 -->
+  </json_placeholders>
+
+  <!-- Mapping tables -->
+  <brand_mapping type="array">
+    <!-- Syntax /pattern/replacement where:
+      any delimiter can be used (not only /) but the delimiter cannot be present in the "replacement" string
+      pattern is a RegExpr pattern
+      replacement is a sprintf string in which:
+          %1$s will be replaced by the whole matched text,
+          %2$s will be replaced by the first match group, if any group is defined in the RegExpr
+          %3$s will be replaced by the second matched group, etc...
+    -->
+    <pattern>/IBM/IBM</pattern>
+    <pattern>/Hewlett Packard/Hewlett-Packard</pattern>
+    <pattern>/Hewlett-Packard/Hewlett-Packard</pattern>
+    <pattern>/Dell/Dell</pattern>
+    <pattern>/.*/%1$s</pattern>
+  </brand_mapping>
+  <model_mapping type="array">
+    <pattern>/.*/%1$s</pattern>
+  </model_mapping>
+  <os_family_mapping type="array">
+    <pattern>/Ubuntu/Linux</pattern>
+    <pattern>/RedHat/Linux</pattern>
+    <pattern>/Debian/Linux</pattern>
+    <pattern>/Linux/Linux</pattern>
+    <pattern>/Windows/Windows</pattern>
+    <pattern>/.*/Other</pattern>
+  </os_family_mapping>
+  <os_version_mapping type="array">
+    <pattern>/.*/%1$s</pattern>
+  </os_version_mapping>
+  <integer_none_mapping type="array">
+    <pattern>/None/0</pattern>
+    <pattern>/-.*/0</pattern>
+    <pattern>/.*/%1$s</pattern>
+  </integer_none_mapping>
+  <string_none_mapping type="array">
+    <pattern>/None/</pattern>
+    <pattern>/.*/%1$s</pattern>
+  </string_none_mapping>
+
+</parameters>
