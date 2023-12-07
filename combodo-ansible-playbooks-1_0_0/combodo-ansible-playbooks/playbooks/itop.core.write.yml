@@ -1,0 +1,197 @@
+#
+# @copyright   Copyright (C) 2023 Combodo SARL
+# @license     http://opensource.org/licenses/AGPL-3.0
+#
+# This playbook writes a CI in iTop i.e. checks if a CI exists, creates it if not and updates it otherwise.
+#
+# Input parameters:
+#  Some are, by default, defined in the ./host_vars/localhost.yml file.
+#  - itop_root = Root URL of the iTop application
+#  - itop_ws_version = Web Service version
+#  - itop_ws_auth_user = User login
+#  - itop_ws_auth_pwd = User password
+#  - itop_ws_ansible_uuid = UUID of the Ansible application in iTop
+#  Other parameters dedicated to iTop's REST/JSON API need to be given to that playbook:
+#  - obj_class = Class of CI to be written
+#  - key = Set of attributes to be used for the reconciliation
+#  - fields = Set of attributes to be used for update or creation
+#  - output_fields = List of attributes to get from iTop once creation or update is done
+# Please, refer to iTop's wiki about REST/JSON services for more details on these parameters.
+#
+# Output parameters:
+#  - code = Error code sent by iTop's API
+#  - obj_key = Key of the created or updated CI
+#
+---
+- name: Write a CI in iTop - update if exists and create if not
+  hosts: localhost
+
+  vars:
+    url: "{{ itop_root }}/webservices/rest.php?version={{ itop_ws_version }}"
+    comment_for_create: "Created from Ansible application with UUID: {{ itop_ws_ansible_uuid }}"
+    comment_for_update: "Updated from Ansible application with UUID: {{ itop_ws_ansible_uuid }}"
+
+# If you prefer to encrypt the login account and password in an Ansible vault:
+#  - Uncomment the following 2 lines
+#  - Store the parameter in a local itopvault.yml file
+#  vars_files:
+#    itopvault.yml
+
+  tasks:
+    - name: Check key variables are defined and not empty
+      ansible.builtin.fail:
+        msg: "One variable is empty"
+      with_items:
+        - "{{ obj_class }}"
+        - "{{ key }}"
+        - "{{ fields }}"
+        - "{{ output_fields }}"
+      when:
+        - not item
+        - item is none
+
+    - name: Check if CI exists
+      block:
+        - name: Call operation core/get
+          ansible.builtin.uri:
+            url: "{{ url }}"
+            method: POST
+            force_basic_auth: true
+            url_username: "{{ itop_ws_auth_user }}"
+            url_password: "{{ itop_ws_auth_pwd }}"
+            body: json_data= {
+              "operation":"core/get",
+              "class":"{{ obj_class }}",
+              "key":{{ key | to_json }},
+              "output_fields":"{{ output_fields }}"
+              }
+            return_content: true
+          register: response
+
+        - name: Save the Json data
+          ansible.builtin.set_fact:
+            jsondata: "{{ response.content | from_json }}"
+
+        - name: Get error code and message
+          ansible.builtin.set_fact:
+            code: "{{ jsondata | json_query('code') }}"
+            message: "{{ jsondata | json_query('message') }}"
+
+        - name: Display error, if any
+          ansible.builtin.fail:
+            msg: "{{ message }}"
+          when: code != "0"
+
+        - name: Get obj_key
+          ansible.builtin.set_fact:
+            obj_key: "{{ jsondata | json_query(param) }}"
+          vars:
+            param: 'objects.*.key'
+
+        - name: Get fields
+          ansible.builtin.set_fact:
+            get_fields: "{{ jsondata | json_query(param) }}"
+          vars:
+            param: 'objects.*.fields'
+
+    - name: Create CI
+      block:
+        - name: Call operation core/create
+          ansible.builtin.uri:
+            url: "{{ url }}"
+            method: POST
+            force_basic_auth: true
+            url_username: "{{ itop_ws_auth_user }}"
+            url_password: "{{ itop_ws_auth_pwd }}"
+            body: json_data= {
+              "operation":"core/create",
+              "comment":"{{ comment_for_create }}",
+              "class":"{{ obj_class }}",
+              "fields":{{ fields | to_json }},
+              "output_fields":"{{ output_fields }}"
+              }
+            return_content: true
+          register: response
+
+        - name: Save the Json data
+          ansible.builtin.set_fact:
+            jsondata: "{{ response.content | from_json }}"
+
+        - name: Get error code and message
+          ansible.builtin.set_fact:
+            code: "{{ jsondata | json_query('code') }}"
+            message: "{{ jsondata | json_query('message') }}"
+
+        - name: Display error, if any
+          ansible.builtin.fail:
+            msg: "{{ message }}"
+          when: code != "0"
+
+        - name: Register operation
+          ansible.builtin.set_fact:
+            operation: "{{ 'created' }}"
+          changed_when: code == "0"
+      when: obj_key == "0" or obj_key == ""
+
+    - name: Update CI
+      block:
+        - name: Call operation core/update
+          ansible.builtin.uri:
+            url: "{{ url }}"
+            method: POST
+            force_basic_auth: true
+            url_username: "{{ itop_ws_auth_user }}"
+            url_password: "{{ itop_ws_auth_pwd }}"
+            body: json_data= {
+              "operation":"core/update",
+              "comment":"{{ comment_for_update }}",
+              "class":"{{ obj_class }}",
+              "key":{{ key | to_json }},
+              "fields":{{ fields | to_json }},
+              "output_fields":"{{ output_fields }}"
+              }
+            return_content: true
+          register: response
+
+        - name: Save the Json data
+          ansible.builtin.set_fact:
+            jsondata: "{{ response.content | from_json }}"
+
+        - name: Get error code and message
+          ansible.builtin.set_fact:
+            code: "{{ jsondata | json_query('code') }}"
+            message: "{{ jsondata | json_query('message') }}"
+
+        - name: Display error, if any
+          ansible.builtin.fail:
+            msg: "{{ message }}"
+          when: code != "0"
+
+        - name: Get fields
+          ansible.builtin.set_fact:
+            set_fields: "{{ jsondata | json_query(param) }}"
+          vars:
+            param: 'objects.*.fields'
+
+        - name: Register operation
+          ansible.builtin.set_fact:
+            operation: "{{ 'updated' }}"
+          changed_when: get_fields != set_fields
+      when: obj_key != "0" and obj_key != ""
+
+    - name: Operation is successful at this stage
+      block:
+        - name: Get obj_key
+          ansible.builtin.set_fact:
+            obj_key: "{{ jsondata | json_query(param) }}"
+          vars:
+            param: 'objects.*.key'
+
+        - name: Display obj_key
+          ansible.builtin.debug:
+            msg: "Object of class {{ obj_class }} with key {{ obj_key }} has been {{ operation }}"
+
+        - name: Set returned variables
+          ansible.builtin.set_fact:
+            code: = "0"
+            obj_key: "{{ obj_key }}"

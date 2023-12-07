@@ -1,0 +1,66 @@
+#
+# @copyright   Copyright (C) 2023 Combodo SARL
+# @license     http://opensource.org/licenses/AGPL-3.0
+#
+# This playbook lists all REST/JSON operations that can be sent to iTop
+#
+# Input parameters:
+#  These are, by default, defined in the ./host_vars/localhost.yml file.
+#  - itop_root = Root URL of the iTop application
+#  - itop_ws_version = Web Service version
+#  - itop_ws_auth_user = User login
+#  - itop_ws_auth_pwd = User password
+#
+# Output parameters:
+#  - None: result is displayed in standard output
+#
+---
+- name: Get from iTop the list of all possible web services
+  hosts: localhost 
+
+  gather_facts: false
+
+  vars:
+    url: "{{ itop_root }}/webservices/rest.php?version={{ itop_ws_version }}"
+
+# If you prefer to encrypt the login account and password in an Ansible vault:
+#  - Uncomment the following 2 lines
+#  - Store the parameter in a local itopvault.yml file
+#  vars_files:
+#    itopvault.yml
+
+  tasks:
+    - name: Call operation list_operation 
+      ansible.builtin.uri:
+        url: "{{ url }}"
+        method: POST
+        force_basic_auth: true
+        url_username: "{{ itop_ws_auth_user }}" 
+        url_password: "{{ itop_ws_auth_pwd }}"
+        body: json_data= {
+          "operation":"list_operations"
+          }
+        return_content: true
+      register: response
+
+    - name: Save the Json data
+      ansible.builtin.set_fact:
+        jsondata: "{{ response.content | from_json }}"
+
+    - name: Get error code, message and answer
+      ansible.builtin.set_fact:
+        error_code: "{{ jsondata | json_query('code') }}"
+        message: "{{ jsondata | json_query('message') }}"
+        operations: "{{ jsondata | json_query('operations') }}"
+
+    - name: Display error, if any
+      ansible.builtin.fail:
+        msg: "{{ message }}"
+      when: error_code != "0"
+
+    - name: Display operations
+      block:
+        - name: Display operations
+          ansible.builtin.debug:
+            var: operations
+      when: error_code == "0"

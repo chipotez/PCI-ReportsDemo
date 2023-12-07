@@ -1,0 +1,38 @@
+#
+# This playbook is an example on how to use itop.core.write.yml playbook to create or update a Logical Interface.
+# The following parameters need to be set before calling the playbook
+#  - obj_class = Class of CI to be written
+#  - key = Set of attributes to be used for the reconciliation
+#  - fields = Set of attributes to be used for update or creation
+#  - output_fields = List of attributes to get from iTop once creation or update is done
+# These can be set manually or result from the output of other playbooks, modules...
+#
+# Important note:
+# The output_fields are used to detected changes between existing object and updated one.
+#
+---
+- name: Create a Logical Interface in iTop
+  hosts: localhost
+
+  tasks:
+    - name: Set variables for the creation
+      ansible.builtin.set_fact:
+        obj_class: "LogicalInterface"
+        key:
+          "virtualmachine_id":
+            "name": "My Ansible VM"
+          "name": "eth0"
+        fields:
+          "name": "eth0"
+          "virtualmachine_id":
+            "name": "My Ansible VM"
+          "ipaddress": "10.11.12.13"
+          "macaddress": "11:22:33:44:55:66"
+          "ipgateway": "10.11.12.1"
+          "ipmask": "255.255.255.0"
+          "speed": "100"
+        output_fields: "name, ipaddress, macaddress, ipgateway, ipmask, speed"
+
+- name: Call iTop playbook to create or update the CI
+  import_playbook: itop.core.write.yml
+
